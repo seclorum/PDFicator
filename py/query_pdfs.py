@@ -25,13 +25,15 @@ results = faiss_index.search(query_embedding, k=5)  # or whatever number of resu
 # Assuming results[0] are the indices and results[1] are the distances
 for idx, dist in zip(results[0][0], results[1][0]):  # Note results[0] and results[1] are arrays, indexing them
     if idx != -1:  # If idx is -1, it means no valid match was found
-        cursor.execute('SELECT filename, keywords FROM documents WHERE id = ?', (idx + 1,))
+        int_idx = int(round(idx))  # Convert FAISS float index to integer
+
+        cursor.execute('SELECT filename, keywords FROM documents WHERE id = ?', (int_idx + 1,))
         result = cursor.fetchone()
         if result:
             file_name, keywords = result
             print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Adjust for the content display
         else:
-            print(f"No document found for index {idx}")
+            print(f"No document found for index {int_idx}")
     else:
         print("No valid results found for the query.")
 
