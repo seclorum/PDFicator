@@ -36,3 +36,16 @@ Different approaches will be taken towards the goal of mining the data - static 
 * process.sh/query.sh will depend on the contents of data/
 * Do not commit your data to the repo - be sure to inspect .gitignore 
 * At least rustc>1.7 is required to be onboard, for the tokenizer packages installed by pip 
+
+## Run:
+
+To do a test run, first you must populate the archive/testCollection/ directory with some PDF's of your own.  You can use the ```populate.sh``` script to do this - it will copy 50 random files from the directory of your choice.
+
+Once you've put some files in archive/testCollection/, you can run the following:
+
+``` sh process.sh && sh query.sh ```
+
+This will process the PDF's in the archive, and then give you a REPL-like query interface to search for text in the database created by process.sh.
+
+Note that, at the moment, there are bugs in the indexing yet to be fixed - but limited results can be attained with this workflow so far.
+
