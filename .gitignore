@@ -169,3 +169,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# PDFicator-related work directories
+archive/testCollection/**
+data/
+pdf_tool_env/**
