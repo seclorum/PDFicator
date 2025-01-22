@@ -2,7 +2,6 @@ import sqlite3
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import readline  # Required for interactive input in the terminal
 
 # Configuration
 db_path = 'data/pdf_index.db'
@@ -28,16 +27,13 @@ def print_top_subjects():
     for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
         if idx != -1:
             # Adjust FAISS index to SQLite index (FAISS is 0-based, SQLite is 1-based)
-            int_idx = int(round(idx)) + 1  # Convert FAISS float index to integer and shift to SQLite's 1-based index
-            
-            # Check if the index is within a valid range in the SQLite database
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(idx),))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Display top 100 characters of keywords
             else:
-                print(f"No document found for index {int_idx}")
+                print(f"No document found for FAISS index {idx}")
         else:
             print("No valid results found for the query.")
 
@@ -46,28 +42,27 @@ def search(query):
     query_embedding = model.encode([query], convert_to_tensor=True).cpu().numpy()
 
     # Run the FAISS search
-    results = faiss_index.search(query_embedding, k=5)  # or whatever number of results you need
-    
-    # Check if results are empty or invalid
-    if results[0].size == 0 or results[1].size == 0:
-        print("No valid results found for the query.")
-        return
+    results = faiss_index.search(query_embedding, k=5)
 
-    # Assuming results[0] are the indices and results[1] are the distances
-    for idx, dist in zip(results[0][0], results[1][0]):  # Note results[0] and results[1] are arrays, indexing them
-        if idx != -1:  # If idx is -1, it means no valid match was found
-            int_idx = int(round(idx)) + 1  # Convert FAISS float index to integer and adjust for SQLite's 1-based index
+    print(f"FAISS search results indices (raw): {results[0]}")  # Debugging output of raw search results
 
-            # Adjust indexing if FAISS and database IDs don't align
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
+    # Ensure we convert the indices to integers
+    for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
+        int_idx = int(idx)  # Ensure FAISS index is an integer
+        print(f"Search Result Index (converted): {int_idx}, Distance: {dist}")  # Debugging the individual results
+
+        if int_idx != -1:  # If idx is -1, it means no valid match was found
+            # Adjust FAISS index to SQLite index (FAISS is 0-based, SQLite is 1-based)
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(int_idx),))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Adjust for the content display
             else:
-                print(f"No document found for index {int_idx}")
+                print(f"No document found for FAISS index {int_idx}")
         else:
             print("No valid results found for the query.")
+
 
 # REPL loop
 print("Welcome to the PDF search REPL. Type your query and press Enter.")
