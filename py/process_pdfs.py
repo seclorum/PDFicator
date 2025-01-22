@@ -10,6 +10,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 pdf_dir = os.path.expanduser('archive/testCollection')
 db_path = 'data/pdf_index.db'
 
+# Function to safely close the database
+def safe_close_db(conn):
+    try:
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error closing database: {e}")
+
 # Initialize database
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
@@ -42,31 +50,44 @@ model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 # Process each PDF
 documents = []
-for root, _, files in os.walk(pdf_dir):
-    for file in files:
-        if file.endswith('.pdf'):
-            filepath = os.path.join(root, file)
-            print(f"Processing: {filepath}")
-            content = extract_text_from_pdf(filepath)
-            keywords = ", ".join(content.split()[:20])  # Placeholder keyword extraction
+try:
+    for root, _, files in os.walk(pdf_dir):
+        for file in files:
+            if file.endswith('.pdf'):
+                filepath = os.path.join(root, file)
+                print(f"Processing: {filepath}")
+                content = extract_text_from_pdf(filepath)
+                keywords = ", ".join(content.split()[:20])  # Placeholder keyword extraction
 
-            # Save to database
-            cursor.execute('INSERT INTO documents (filename, content, keywords) VALUES (?, ?, ?)',
-                           (file, content, keywords))
+                # Save to database
+                cursor.execute('INSERT INTO documents (filename, content, keywords) VALUES (?, ?, ?)',
+                               (file, content, keywords))
 
-            cursor.execute('INSERT INTO document_index (content) VALUES (?)', (content,))
-            documents.append((file, content))
+                cursor.execute('INSERT INTO document_index (content) VALUES (?)', (content,))
+                documents.append((file, content))
 
-# Commit changes
-conn.commit()
+    # Commit changes
+    conn.commit()
 
-# Vectorize content and build FAISS index
-texts = [doc[1] for doc in documents]
-embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
-d = embeddings.shape[1]
-faiss_index = faiss.IndexFlatL2(d)
-faiss_index.add(embeddings)
-faiss.write_index(faiss_index, 'data/faiss_index.bin')
+    # Vectorize content and build FAISS index
+    texts = [doc[1] for doc in documents]
+    embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
+    d = embeddings.shape[1]
+    faiss_index = faiss.IndexFlatL2(d)
+    faiss_index.add(embeddings)
+    faiss.write_index(faiss_index, 'data/faiss_index.bin')
 
-print("Indexing complete.")
-conn.close()
+    print("Indexing complete.")
+
+except KeyboardInterrupt:
+    print("\nProcess interrupted by user.")
+    safe_close_db(conn)  # Close the database safely on interruption
+
+except Exception as e:
+    print(f"Error: {e}")
+    safe_close_db(conn)  # Close the database safely on any other error
+
+else:
+    # Only close if no errors
+    safe_close_db(conn)
+
