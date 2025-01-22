@@ -10,3 +10,8 @@ Different approaches will be taken towards the goal of mining the data - static 
 
 
 
+## Notes:
+
+* tools.sh is used to set up the tooling for the project, including a pyenv environment.
+* For now, requires python 3.11 on MacOS and Linux.  Other python versions may get a pyenv configuration when needed.
+
