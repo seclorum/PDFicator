@@ -10,7 +10,8 @@ PDF_DIR="archive/testCollection"
 DB_PATH="data/pdf_index.db"
 
 # Run the processing script
-python py/process_pdfs.py
+#python py/simple_process_pdfs.py
+python py/repl_process_pdfs.py
 
 
 deactivate
