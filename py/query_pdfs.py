@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 # Configuration
 db_path = 'data/pdf_index.db'
-faiss_index_path = 'faiss_index.bin'
+faiss_index_path = 'data/faiss_index.bin'
 
 # Load database and FAISS index
 conn = sqlite3.connect(db_path)
@@ -15,19 +15,26 @@ faiss_index = faiss.read_index(faiss_index_path)
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 # Sample query
-query = "Machine learning applications in biology"
+query = "Oric Atmos"
 print(f"Query: {query}")
 query_embedding = model.encode([query], convert_to_tensor=True).cpu().numpy()
 
-# Search FAISS index
-D, I = faiss_index.search(query_embedding, k=5)
+# Run the FAISS search
+results = faiss_index.search(query_embedding, k=5)  # or whatever number of results you need
 
-# Fetch results
-for idx in I[0]:
-    if idx == -1:
-        continue
-    cursor.execute('SELECT filename, keywords FROM documents WHERE id = ?', (idx + 1,))
-    result = cursor.fetchone()
-    print(f"File: {result[0]}, Keywords: {result[1]}")
+# Assuming results[0] are the indices and results[1] are the distances
+for idx, dist in zip(results[0][0], results[1][0]):  # Note results[0] and results[1] are arrays, indexing them
+    if idx != -1:  # If idx is -1, it means no valid match was found
+        cursor.execute('SELECT filename, keywords FROM documents WHERE id = ?', (idx + 1,))
+        result = cursor.fetchone()
+        if result:
+            file_name, keywords = result
+            print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Adjust for the content display
+        else:
+            print(f"No document found for index {idx}")
+    else:
+        print("No valid results found for the query.")
 
+# Close the database connection
 conn.close()
+
