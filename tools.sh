@@ -2,6 +2,9 @@
 
 # --- Stage 1: Installation and Setup ---
 # Notes: Updated for Python 3.11+ compatibility
+echo "Making local directory structure..."
+mkdir -p archive/testCollection data
+
 echo "Setting up dependencies..."
 
 # Update package manager and install prerequisites
