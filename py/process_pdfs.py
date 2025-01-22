@@ -66,7 +66,7 @@ embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
 d = embeddings.shape[1]
 faiss_index = faiss.IndexFlatL2(d)
 faiss_index.add(embeddings)
-faiss.write_index(faiss_index, 'faiss_index.bin')
+faiss.write_index(faiss_index, 'data/faiss_index.bin')
 
 print("Indexing complete.")
 conn.close()
