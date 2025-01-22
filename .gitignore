@@ -172,5 +172,5 @@ cython_debug/
 
 # PDFicator-related work directories
 archive/testCollection/**
-data/
+data/**
 pdf_tool_env/**
