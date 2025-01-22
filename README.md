@@ -35,4 +35,4 @@ Different approaches will be taken towards the goal of mining the data - static 
 * Put your own test PDF collection in archive/testCollection/
 * process.sh/query.sh will depend on the contents of data/
 * Do not commit your data to the repo - be sure to inspect .gitignore 
-
+* At least rustc>1.7 is required to be onboard, for the tokenizer packages installed by pip 
