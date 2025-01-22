@@ -55,6 +55,7 @@ def run_repl():
     documents = []  # List to store documents as they are processed
 
     while True:
+        # Instead of a regular command input, check for an empty line (Enter key press)
         command = input("REPL command (continue, end, query, or help): ").strip().lower()
 
         if command == "continue":
@@ -127,6 +128,11 @@ def run_repl():
             print("  end - End the process and safely close the database.")
             print("  query - Query the indexed documents.")
             print("  help - Show this help message.")
+
+        elif command == "":  # If Enter is pressed with no input, we treat it as an interruption
+            print("Enter key pressed. Stopping the process.")
+            safe_close_db(conn)
+            break
 
         else:
             print("Invalid command. Type 'help' for a list of commands.")
