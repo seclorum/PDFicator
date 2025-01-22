@@ -12,3 +12,5 @@ DB_PATH="data/pdf_index.db"
 # Run the processing script
 python py/process_pdfs.py
 
+
+deactivate
