@@ -26,8 +26,8 @@ def print_top_subjects():
     # Assuming results[0] are the indices and results[1] are the distances
     for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
         if idx != -1:
-            # Adjust FAISS index to SQLite index (FAISS is 0-based, SQLite is 1-based)
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(idx),))
+            # Query SQLite using FAISS index
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
@@ -48,21 +48,17 @@ def search(query):
 
     # Ensure we convert the indices to integers
     for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
-        int_idx = int(idx)  # Ensure FAISS index is an integer
-        print(f"Search Result Index (converted): {int_idx}, Distance: {dist}")  # Debugging the individual results
-
-        if int_idx != -1:  # If idx is -1, it means no valid match was found
-            # Adjust FAISS index to SQLite index (FAISS is 0-based, SQLite is 1-based)
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(int_idx),))
+        if idx != -1:  # If idx is -1, it means no valid match was found
+            # Query SQLite using FAISS index
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
-                print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Adjust for the content display
+                print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Display top 100 characters of keywords
             else:
-                print(f"No document found for FAISS index {int_idx}")
+                print(f"No document found for FAISS index {idx}")
         else:
             print("No valid results found for the query.")
-
 
 # REPL loop
 print("Welcome to the PDF search REPL. Type your query and press Enter.")

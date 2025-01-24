@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS documents (
     filename TEXT,
     content TEXT,
     keywords TEXT,
-    faiss_index INTEGER  -- Store FAISS index for each document
+    faiss_index INTEGER  -- Store FAISS index position
 )
 ''')
 
@@ -58,8 +58,7 @@ for root, _, files in os.walk(pdf_dir):
             doc_id = cursor.lastrowid  # Get the last inserted document ID
 
             cursor.execute('INSERT INTO document_index (content) VALUES (?)', (content,))
-            faiss_index_id = doc_id  # Map document ID to FAISS index
-            documents.append((file, content, faiss_index_id))  # Add document with its ID for FAISS mapping
+            documents.append((doc_id, content))  # Add document ID and content for FAISS mapping
 
 # Commit changes
 conn.commit()
@@ -67,13 +66,13 @@ conn.commit()
 # Vectorize content and build FAISS index
 texts = [doc[1] for doc in documents]
 embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
-d = embeddings.shape[1]
-faiss_index = faiss.IndexFlatL2(d)
 
-# Ensure that the document IDs are correctly added to FAISS
-for i, text in enumerate(texts):
-    print(f"Inserting document {i} into FAISS")  # Debugging print
-faiss_index.add(embeddings)
+# Add embeddings to FAISS and update database with FAISS index positions
+for i, (doc_id, _) in enumerate(documents):
+    embedding = embeddings[i:i+1]  # FAISS expects 2D arrays
+    faiss_index.add(embedding)
+    # Update SQLite with the FAISS index position
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (i, doc_id))
 
 # Save the FAISS index to file
 faiss.write_index(faiss_index, 'data/faiss_index.bin')
