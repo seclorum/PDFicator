@@ -174,3 +174,4 @@ cython_debug/
 archive/testCollection/**
 data/**
 pdf_tool_env/**
+.DS_Store
