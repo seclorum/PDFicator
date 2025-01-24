@@ -28,6 +28,10 @@ CREATE VIRTUAL TABLE IF NOT EXISTS document_index USING FTS5(
 )
 ''')
 
+def round_index(idx, precision=6):
+    """ Round FAISS index to the specified precision. """
+    return int(round(idx, precision))
+
 # Text extraction function
 def extract_text_from_pdf(pdf_path):
     try:
@@ -69,7 +73,7 @@ faiss_index = faiss.IndexFlatL2(d)
 # Add vectors to FAISS and update SQLite with FAISS indices
 faiss_index.add(embeddings)
 for i, (doc_id, _) in enumerate(documents):
-    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (float(i), doc_id))
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (round_index(i), doc_id))
 conn.commit()
 
 # Save the FAISS index to file

@@ -13,6 +13,10 @@ cursor = conn.cursor()
 faiss_index = faiss.read_index(faiss_index_path)
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
+def round_index(idx, precision=6):
+    """ Round FAISS index to the specified precision. """
+    return int(round(idx, precision))
+
 def print_top_subjects():
     query_embedding = model.encode(["sample"], convert_to_tensor=True).cpu().numpy()
 
@@ -22,13 +26,15 @@ def print_top_subjects():
     print("Top 10 subjects in the FAISS index:")
     for idx, dist in zip(results[0][0], results[1][0]):
         if idx != -1:
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
+            # Round FAISS index to the nearest 6 decimals (precision might be different)
+            rounded_idx = round_index(idx)
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (rounded_idx,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Top 100 characters of keywords
             else:
-                print(f"No document found for FAISS index {idx}")
+                print(f"No document found for FAISS index {rounded_idx} (not rounded: {idx})")
         else:
             print("No valid results found.")
 
@@ -40,13 +46,15 @@ def search(query):
     results = faiss_index.search(query_embedding, k=5)
     for idx, dist in zip(results[0][0], results[1][0]):
         if idx != -1:
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(idx),))
+            # Round FAISS index to the nearest 6 decimals (precision might be different)
+            rounded_idx = round_index(idx)
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (rounded_idx,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")
             else:
-                print(f"No document found for FAISS index {idx}")
+                print(f"No document found for FAISS index {rounded_idx}")
         else:
             print("No valid results found.")
 

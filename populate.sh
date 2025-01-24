@@ -16,7 +16,7 @@
 SOURCE_DIR="$HOME/Documents/PDF/"
 DEST_DIR="archive/testCollection"
 # Number of files to select
-NUM_FILES=50
+NUM_FILES=10
 
 # Check if the source directory exists
 if [ ! -d "$SOURCE_DIR" ]; then

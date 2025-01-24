@@ -12,6 +12,10 @@ faiss_index = faiss.read_index(faiss_index_path)
 num_vectors = faiss_index.ntotal
 dimension = faiss_index.d
 
+def round_index(idx, precision=6):
+    """ Round FAISS index to the specified precision. """
+    return int(round(idx, precision))
+
 print(f"FAISS Index Loaded:")
 print(f"- Number of Vectors: {num_vectors}")
 print(f"- Dimension of Each Vector: {dimension}")
@@ -38,23 +42,23 @@ for record in db_records:
         mismatches += 1
         continue
 
-    # Convert the float index to integer for FAISS
-    db_faiss_index = int(round(db_faiss_index))  # Round and cast to integer
+    # round the float
+    rounded_db_faiss_index = round_index(db_faiss_index)
 
     # Check bounds for FAISS index
-    if db_faiss_index < 0 or db_faiss_index >= num_vectors:
-        print(f"Error: FAISS index for document '{filename}' (ID: {doc_id}) is out of bounds: {db_faiss_index}")
+    if rounded_db_faiss_index < 0 or rounded_db_faiss_index >= num_vectors:
+        print(f"Error: FAISS index for document '{filename}' (ID: {doc_id}) is out of bounds: {rounded_db_faiss_index}")
         mismatches += 1
         continue
 
     # Validate embeddings
     try:
-        faiss_vector = vectors[db_faiss_index]
-        print(f"Document '{filename}' (SQLite ID: {doc_id}, FAISS Index: {db_faiss_index})")
+        faiss_vector = vectors[rounded_db_faiss_index]
+        print(f"Document '{filename}' (SQLite ID: {doc_id}, FAISS Index: {rounded_db_faiss_index})")
         print(f"- Keywords: {keywords[:100]}")
         print(f"- FAISS Vector Sample: {faiss_vector[:5]}")  # First 5 dimensions
     except IndexError:
-        print(f"Error: Invalid FAISS index for document '{filename}' (ID: {doc_id}): {db_faiss_index}")
+        print(f"Error: Invalid FAISS index for document '{filename}' (ID: {doc_id}): {rounded_db_faiss_index}")
         mismatches += 1
 
 # Optional: Re-encode content and validate (first 5 records)
@@ -67,8 +71,8 @@ for record in db_records[:5]:  # Limit validation for efficiency
         reencoded_vector = model.encode([content], convert_to_tensor=True).cpu().numpy()[0]
         
         # Fetch the corresponding FAISS vector
-        db_faiss_index = int(round(db_faiss_index))  # Round and cast again
-        faiss_vector = vectors[db_faiss_index]
+        rounded_db_faiss_index = round_index(db_faiss_index)  # Round and cast again
+        faiss_vector = vectors[rounded_db_faiss_index]
         
         # Compute difference
         diff = np.linalg.norm(reencoded_vector - faiss_vector)
