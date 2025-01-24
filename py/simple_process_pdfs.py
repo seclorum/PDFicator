@@ -41,6 +41,7 @@ def extract_text_from_pdf(pdf_path):
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 # Process each PDF
+# Process each PDF
 documents = []
 faiss_index = faiss.IndexFlatL2(384)  # Set FAISS index dimension (384 for MiniLM-L6-v2)
 
@@ -56,8 +57,6 @@ for root, _, files in os.walk(pdf_dir):
             cursor.execute('INSERT INTO documents (filename, content, keywords) VALUES (?, ?, ?)',
                            (file, content, keywords))
             doc_id = cursor.lastrowid  # Get the last inserted document ID
-
-            cursor.execute('INSERT INTO document_index (content) VALUES (?)', (content,))
             documents.append((doc_id, content))  # Add document ID and content for FAISS mapping
 
 # Commit changes
@@ -71,8 +70,8 @@ embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
 for i, (doc_id, _) in enumerate(documents):
     embedding = embeddings[i:i+1]  # FAISS expects 2D arrays
     faiss_index.add(embedding)
-    # Update SQLite with the FAISS index position
-    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (i, doc_id))
+    # Update SQLite with the actual FAISS index position
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (faiss_index.ntotal - 1, doc_id))
 
 # Save the FAISS index to file
 faiss.write_index(faiss_index, 'data/faiss_index.bin')

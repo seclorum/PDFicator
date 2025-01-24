@@ -23,10 +23,9 @@ def print_top_subjects():
     results = faiss_index.search(query_embedding, k=10)  # Retrieve top 10 matches
 
     print("Top 10 subjects in the FAISS index:")
-    # Assuming results[0] are the indices and results[1] are the distances
     for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
+        idx = int(idx)  # Convert FAISS index to integer
         if idx != -1:
-            # Query SQLite using FAISS index
             cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
             result = cursor.fetchone()
             if result:
@@ -46,10 +45,9 @@ def search(query):
 
     print(f"FAISS search results indices (raw): {results[0]}")  # Debugging output of raw search results
 
-    # Ensure we convert the indices to integers
     for idx, dist in zip(results[0][0], results[1][0]):  # Indexing results arrays
+        idx = int(idx)  # Convert FAISS index to integer
         if idx != -1:  # If idx is -1, it means no valid match was found
-            # Query SQLite using FAISS index
             cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
             result = cursor.fetchone()
             if result:
@@ -59,6 +57,7 @@ def search(query):
                 print(f"No document found for FAISS index {idx}")
         else:
             print("No valid results found for the query.")
+
 
 # REPL loop
 print("Welcome to the PDF search REPL. Type your query and press Enter.")
