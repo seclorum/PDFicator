@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS documents (
     filename TEXT,
     content TEXT,
     keywords TEXT,
-    faiss_index INTEGER  -- Store FAISS index position
+    faiss_index INTEGER
 )
 ''')
 
@@ -41,10 +41,7 @@ def extract_text_from_pdf(pdf_path):
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 # Process each PDF
-# Process each PDF
 documents = []
-faiss_index = faiss.IndexFlatL2(384)  # Set FAISS index dimension (384 for MiniLM-L6-v2)
-
 for root, _, files in os.walk(pdf_dir):
     for file in files:
         if file.endswith('.pdf'):
@@ -56,28 +53,28 @@ for root, _, files in os.walk(pdf_dir):
             # Save to database
             cursor.execute('INSERT INTO documents (filename, content, keywords) VALUES (?, ?, ?)',
                            (file, content, keywords))
-            doc_id = cursor.lastrowid  # Get the last inserted document ID
-            documents.append((doc_id, content))  # Add document ID and content for FAISS mapping
+            doc_id = cursor.lastrowid
+            cursor.execute('INSERT INTO document_index (content) VALUES (?)', (content,))
+            documents.append((doc_id, content))
 
-# Commit changes
+# Commit changes to save initial data
 conn.commit()
 
 # Vectorize content and build FAISS index
 texts = [doc[1] for doc in documents]
 embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
+d = embeddings.shape[1]
+faiss_index = faiss.IndexFlatL2(d)
 
-# Add embeddings to FAISS and update database with FAISS index positions
+# Add vectors to FAISS and update SQLite with FAISS indices
+faiss_index.add(embeddings)
 for i, (doc_id, _) in enumerate(documents):
-    embedding = embeddings[i:i+1]  # FAISS expects 2D arrays
-    faiss_index.add(embedding)
-    # Update SQLite with the actual FAISS index position
-    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (faiss_index.ntotal - 1, doc_id))
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (i, doc_id))
+conn.commit()
 
 # Save the FAISS index to file
 faiss.write_index(faiss_index, 'data/faiss_index.bin')
 
 print("Indexing complete.")
-
-# Close the database connection
 conn.close()
 
