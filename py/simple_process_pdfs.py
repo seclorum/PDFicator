@@ -69,7 +69,7 @@ faiss_index = faiss.IndexFlatL2(d)
 # Add vectors to FAISS and update SQLite with FAISS indices
 faiss_index.add(embeddings)
 for i, (doc_id, _) in enumerate(documents):
-    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (i, doc_id))
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (int(i), doc_id))
 conn.commit()
 
 # Save the FAISS index to file
