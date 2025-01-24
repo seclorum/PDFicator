@@ -38,16 +38,24 @@ for record in db_records:
         mismatches += 1
         continue
 
+    # Convert the float index to integer for FAISS
+    db_faiss_index = int(round(db_faiss_index))  # Round and cast to integer
+
+    # Check bounds for FAISS index
     if db_faiss_index < 0 or db_faiss_index >= num_vectors:
         print(f"Error: FAISS index for document '{filename}' (ID: {doc_id}) is out of bounds: {db_faiss_index}")
         mismatches += 1
         continue
 
     # Validate embeddings
-    faiss_vector = vectors[db_faiss_index]
-    print(f"Document '{filename}' (SQLite ID: {doc_id}, FAISS Index: {db_faiss_index})")
-    print(f"- Keywords: {keywords[:100]}")
-    print(f"- FAISS Vector Sample: {faiss_vector[:5]}")  # First 5 dimensions
+    try:
+        faiss_vector = vectors[db_faiss_index]
+        print(f"Document '{filename}' (SQLite ID: {doc_id}, FAISS Index: {db_faiss_index})")
+        print(f"- Keywords: {keywords[:100]}")
+        print(f"- FAISS Vector Sample: {faiss_vector[:5]}")  # First 5 dimensions
+    except IndexError:
+        print(f"Error: Invalid FAISS index for document '{filename}' (ID: {doc_id}): {db_faiss_index}")
+        mismatches += 1
 
 # Optional: Re-encode content and validate (first 5 records)
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
@@ -55,8 +63,14 @@ print("\nValidating embeddings by re-encoding content...")
 for record in db_records[:5]:  # Limit validation for efficiency
     doc_id, filename, content, keywords, db_faiss_index = record
     if db_faiss_index is not None and db_faiss_index < num_vectors:
+        # Re-encode document content
         reencoded_vector = model.encode([content], convert_to_tensor=True).cpu().numpy()[0]
+        
+        # Fetch the corresponding FAISS vector
+        db_faiss_index = int(round(db_faiss_index))  # Round and cast again
         faiss_vector = vectors[db_faiss_index]
+        
+        # Compute difference
         diff = np.linalg.norm(reencoded_vector - faiss_vector)
         print(f"Document '{filename}' (ID: {doc_id}) - Embedding Difference: {diff:.6f}")
 

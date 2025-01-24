@@ -22,7 +22,7 @@ def print_top_subjects():
     print("Top 10 subjects in the FAISS index:")
     for idx, dist in zip(results[0][0], results[1][0]):
         if idx != -1:
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (int(idx),))
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (idx,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
