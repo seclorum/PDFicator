@@ -10,7 +10,7 @@ echo "Setting up dependencies..."
 # Update package manager and install prerequisites
 # !J! Only do these if you don't already have your python eggs in order
 #sudo apt-get update -y || brew update
-#sudo apt-get install -y python3.11 python3.11-venv python3.11-dev sqlite3 poppler-utils || brew install python3 sqlite3 poppler
+#sudo apt-get install -y python3.11 python3.11-venv python3.11-dev sqlite3 poppler-utils || brew install python3 sqlite3 poppler coreutils
 
 # Be sure the correct rust toolchain is onboard, for compiling transformers
 #rustup toolchain install 1.72.0
