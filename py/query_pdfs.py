@@ -2,20 +2,21 @@ import sqlite3
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
+import hashlib
 
 # Configuration
 db_path = 'data/pdf_index.db'
 faiss_index_path = 'data/faiss_index.bin'
+
+# Hashing function to convert float index to a unique hash
+def hash_index(idx):
+    return hashlib.sha256(str(idx).encode('utf-8')).hexdigest()
 
 # Load database and FAISS index
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 faiss_index = faiss.read_index(faiss_index_path)
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
-
-def round_index(idx, precision=6):
-    """ Round FAISS index to the specified precision. """
-    return int(round(idx, precision))
 
 def print_top_subjects():
     query_embedding = model.encode(["sample"], convert_to_tensor=True).cpu().numpy()
@@ -26,15 +27,15 @@ def print_top_subjects():
     print("Top 10 subjects in the FAISS index:")
     for idx, dist in zip(results[0][0], results[1][0]):
         if idx != -1:
-            # Round FAISS index to the nearest 6 decimals (precision might be different)
-            rounded_idx = round_index(idx)
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (rounded_idx,))
+            # Generate the hash of the FAISS index
+            faiss_index_hash = hash_index(idx)
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (faiss_index_hash,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")  # Top 100 characters of keywords
             else:
-                print(f"No document found for FAISS index {rounded_idx} (not rounded: {idx})")
+                print(f"No document found for FAISS index hash {faiss_index_hash}")
         else:
             print("No valid results found.")
 
@@ -46,15 +47,15 @@ def search(query):
     results = faiss_index.search(query_embedding, k=5)
     for idx, dist in zip(results[0][0], results[1][0]):
         if idx != -1:
-            # Round FAISS index to the nearest 6 decimals (precision might be different)
-            rounded_idx = round_index(idx)
-            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (rounded_idx,))
+            # Generate the hash of the FAISS index
+            faiss_index_hash = hash_index(idx)
+            cursor.execute('SELECT filename, keywords FROM documents WHERE faiss_index = ?', (faiss_index_hash,))
             result = cursor.fetchone()
             if result:
                 file_name, keywords = result
                 print(f"File: {file_name}, Keywords: {keywords[:100]}")
             else:
-                print(f"No document found for FAISS index {rounded_idx}")
+                print(f"No document found for FAISS index hash {faiss_index_hash}")
         else:
             print("No valid results found.")
 

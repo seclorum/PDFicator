@@ -1,5 +1,6 @@
 import faiss
 import numpy as np
+import hashlib
 
 # Path to the FAISS index file
 faiss_index_path = 'data/faiss_index.bin'
@@ -15,9 +16,12 @@ print(f"FAISS Index Loaded:")
 print(f"- Number of Vectors: {num_vectors}")
 print(f"- Dimension of Each Vector: {dimension}")
 
+# Hashing function to convert FAISS index to a unique hash
+def hash_index(idx):
+    """Hash the FAISS index to compare with stored hashes."""
+    return hashlib.sha256(str(idx).encode('utf-8')).hexdigest()
+
 # Retrieve vectors for inspection
-# FAISS doesn't directly store IDs unless an ID map is used.
-# Use the range of indices as they correspond to the vectors' positions in the index.
 vectors = np.zeros((num_vectors, dimension), dtype=np.float32)
 faiss_index.reconstruct_n(0, num_vectors, vectors)
 
@@ -35,4 +39,10 @@ else:
 # Optional: Save vectors to a file for further inspection
 np.savetxt("data/faiss_vectors.txt", vectors, delimiter=",")
 print("All vectors have been saved to data/faiss_vectors.txt for detailed inspection.")
+
+# Optional: Display corresponding FAISS index hashes for inspection
+print("\nFAISS Index Hashes:")
+for i in range(min(10, num_vectors)):  # Display first 10 FAISS index hashes
+    faiss_index_hash = hash_index(i)
+    print(f"Index {i} - Hash: {faiss_index_hash}")
 

@@ -4,6 +4,7 @@ from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+import hashlib
 
 # Configuration
 pdf_dir = os.path.expanduser('archive/testCollection')
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS documents (
     filename TEXT,
     content TEXT,
     keywords TEXT,
-    faiss_index REAL
+    faiss_index TEXT  -- Changed to TEXT to store hash values
 )
 ''')
 
@@ -28,9 +29,9 @@ CREATE VIRTUAL TABLE IF NOT EXISTS document_index USING FTS5(
 )
 ''')
 
-def round_index(idx, precision=6):
-    """ Round FAISS index to the specified precision. """
-    return int(round(idx, precision))
+# Hashing function to convert FAISS index to a unique hash
+def hash_index(idx):
+    return hashlib.sha256(str(idx).encode('utf-8')).hexdigest()
 
 # Text extraction function
 def extract_text_from_pdf(pdf_path):
@@ -70,10 +71,12 @@ embeddings = model.encode(texts, convert_to_tensor=True).cpu().numpy()
 d = embeddings.shape[1]
 faiss_index = faiss.IndexFlatL2(d)
 
-# Add vectors to FAISS and update SQLite with FAISS indices
+# Add vectors to FAISS and update SQLite with hashed FAISS indices
 faiss_index.add(embeddings)
 for i, (doc_id, _) in enumerate(documents):
-    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (round_index(i), doc_id))
+    # Generate hash for the FAISS index
+    faiss_index_hash = hash_index(i)
+    cursor.execute('UPDATE documents SET faiss_index = ? WHERE id = ?', (faiss_index_hash, doc_id))
 conn.commit()
 
 # Save the FAISS index to file
